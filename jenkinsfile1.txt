@@ -1,0 +1,50 @@
+ pipeline {
+       agent any
+              stages {
+                   stage('Clone') {
+                         steps {
+                            git credentialsId: 'Github', url: 'https://github.com/skillrary/welcometoskillrary.git'
+                            }
+                         }
+                   stage('Build') {
+                            steps {
+                                sh "mvn clean install"   
+                            }
+                         }
+		     stage ('Server'){
+            steps {
+               rtServer (
+                 id: "server",
+                 url: 'http://3.129.21.43:8082/artifactory',
+                 username: 'admin',
+                  password: 'Kumar@12345',
+                  bypassProxy: true,
+                   timeout: 300
+                        )
+            }
+        }
+        stage('Upload'){
+            steps{
+                rtUpload (
+                 serverId:"server" ,
+                  spec: '''{
+                   "files": [
+                      {
+                      "pattern": "*.war",
+                      "target": "Kumar12345"
+                      }
+                            ]
+                           }''',
+                        )
+            }
+        }
+        stage ('Publish build info') {
+            steps {
+                rtPublishBuildInfo (
+                    serverId: "server"
+                )
+            }
+        }
+		      
+	          }
+     }
